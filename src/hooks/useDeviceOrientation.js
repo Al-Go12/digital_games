@@ -69,7 +69,9 @@ export function useDeviceOrientation() {
 
   // Keyboard fallback for desktop (left/right arrows mapped to gamma tilt)
   useEffect(() => {
-    if (permissionState === 'granted' && isSupported) return; // Don't use fallback if actual motion is working
+    // Note: We deliberately allow keyboard fallback at all times.
+    // On desktop, permissionState is automatically 'granted' but no motion events are fired,
+    // so this ensures the game remains playable on desktop.
 
     const handleKeyDown = (e) => {
       if (e.key === 'ArrowLeft' || e.key === 'a') {
