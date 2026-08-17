@@ -1,0 +1,91 @@
+import { useState, useEffect, useRef } from 'react';
+import { PoseLandmarker, FilesetResolver } from '@mediapipe/tasks-vision';
+
+export function usePoseTracking(videoRef, isEnabled = false) {
+  const [isLoaded, setIsLoaded] = useState(false);
+  const [poseData, setPoseData] = useState(null); 
+  const landmarkerRef = useRef(null);
+  const requestRef = useRef(null);
+  const lastVideoTimeRef = useRef(-1);
+
+  const [demoMode, setDemoMode] = useState(false);
+
+  useEffect(() => {
+    let active = true;
+
+    async function initializePoseTracking() {
+      try {
+        const vision = await FilesetResolver.forVisionTasks(
+          "https://cdn.jsdelivr.net/npm/@mediapipe/tasks-vision@0.10.3/wasm"
+        );
+        
+        const poseLandmarker = await PoseLandmarker.createFromOptions(vision, {
+          baseOptions: {
+            modelAssetPath: `https://storage.googleapis.com/mediapipe-models/pose_landmarker/pose_landmarker_lite/float16/1/pose_landmarker_lite.task`,
+            delegate: "GPU"
+          },
+          runningMode: "VIDEO",
+          numPoses: 1
+        });
+
+        if (active) {
+          landmarkerRef.current = poseLandmarker;
+          setIsLoaded(true);
+        }
+      } catch (error) {
+        console.error("Failed to load PoseLandmarker:", error);
+        if (active) setDemoMode(true);
+      }
+    }
+
+    if (isEnabled && !landmarkerRef.current && !demoMode) {
+      initializePoseTracking();
+    }
+
+    return () => {
+      active = false;
+      if (landmarkerRef.current) {
+        landmarkerRef.current.close();
+        landmarkerRef.current = null;
+      }
+    };
+  }, [isEnabled, demoMode]);
+
+  // Main prediction loop
+  useEffect(() => {
+    if (!isEnabled || demoMode) return;
+
+    const predictWebcam = () => {
+      const video = videoRef.current;
+      if (video && video.readyState >= 2 && landmarkerRef.current) {
+        let startTimeMs = performance.now();
+        if (lastVideoTimeRef.current !== video.currentTime) {
+          lastVideoTimeRef.current = video.currentTime;
+          const results = landmarkerRef.current.detectForVideo(video, startTimeMs);
+          
+          if (results.landmarks && results.landmarks.length > 0) {
+            setPoseData(results.landmarks[0]);
+          }
+        }
+      }
+      requestRef.current = requestAnimationFrame(predictWebcam);
+    };
+
+    if (isLoaded) {
+      requestRef.current = requestAnimationFrame(predictWebcam);
+    }
+
+    return () => {
+      if (requestRef.current) {
+        cancelAnimationFrame(requestRef.current);
+      }
+    };
+  }, [isEnabled, isLoaded, videoRef, demoMode]);
+
+  return { 
+    isLoaded, 
+    poseData,
+    demoMode,
+    enableDemoMode: () => setDemoMode(true)
+  };
+}

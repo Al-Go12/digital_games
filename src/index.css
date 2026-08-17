@@ -1,0 +1,27 @@
+@import "tailwindcss";
+
+@layer base {
+  html, body {
+    margin: 0;
+    padding: 0;
+    width: 100%;
+    height: 100%;
+    overflow: hidden; /* App Shell manages overflow */
+  }
+
+  body {
+    -webkit-font-smoothing: antialiased;
+    -moz-osx-font-smoothing: grayscale;
+    touch-action: none; /* Prevent browser scrolling to help with games */
+  }
+
+  #root {
+    width: 100%;
+    height: 100%;
+  }
+}
+
+/* Custom utilities */
+.mirror {
+  transform: scaleX(-1);
+}
