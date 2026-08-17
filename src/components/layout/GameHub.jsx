@@ -30,8 +30,8 @@ const GAMES = [
   },
   {
     id: "pose-freeze",
-    title: "Gesture & Freeze",
-    description: "Match the hand gesture and hold it perfectly still before time runs out.",
+    title: "Gesture Memory Challenge",
+    description: "Watch. Remember. Repeat. Memorize hand gesture sequences.",
     input: "Camera + Hand Tracking",
     icon: Video,
     color: "bg-rose-500",

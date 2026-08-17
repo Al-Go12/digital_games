@@ -23,12 +23,15 @@ export function PermissionProvider({ children }) {
     const isCameraGame = location.pathname === '/game/catch-diamond' || location.pathname === '/game/pose-freeze';
     
     if (!isCameraGame) {
-      camera.stopCamera();
+      if (camera.stream) {
+        camera.stopCamera();
+      }
     } else if (hasCompletedOnboarding && !globalDemoMode && !camera.stream) {
       // Re-request stream if returning to a camera game
       camera.requestPermission();
     }
-  }, [location.pathname, hasCompletedOnboarding, globalDemoMode, camera]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [location.pathname, hasCompletedOnboarding, globalDemoMode]);
 
   return (
     <PermissionContext.Provider 

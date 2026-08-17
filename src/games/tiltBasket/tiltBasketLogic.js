@@ -48,8 +48,8 @@ export function useTiltBasketLogic(orientation) {
       }
 
       const newObj = {
-        id: Math.random().toString(36).substr(2, 9),
         ...selectedType,
+        id: `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         x: Math.random() * (GAME_WIDTH - TILT_BASKET_CONFIG.OBJECT_SIZE),
         y: -50,
       };

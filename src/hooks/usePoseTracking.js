@@ -51,11 +51,12 @@ export function usePoseTracking(videoRef, isEnabled = false) {
     };
   }, [isEnabled, demoMode]);
 
+  const smoothedPoseRef = useRef(new Array(33).fill({ x: 0, y: 0, z: 0, visibility: 0 }));
+
   // Main prediction loop
   useEffect(() => {
     if (!isEnabled || demoMode) return;
 
-    const smoothedPoseRef = useRef(new Array(33).fill({ x: 0, y: 0, z: 0, visibility: 0 }));
     let isFirstFrame = true;
 
     const predictWebcam = () => {

@@ -39,8 +39,8 @@ export function useCatchDiamondLogic(handData) {
       }
 
       objectsRef.current.push({
-        id: Date.now().toString(),
         ...selectedType,
+        id: `obj_${Date.now()}_${Math.random().toString(36).substr(2, 9)}`,
         x: Math.random() * (GAME_WIDTH - CATCH_DIAMOND_CONFIG.OBJECT_SIZE),
         y: -50,
       });

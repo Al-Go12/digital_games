@@ -20,6 +20,12 @@ export function useCamera() {
       });
       setStream(mediaStream);
       setPermissionState('granted');
+
+      // Bind to existing video element if present
+      if (videoRef.current) {
+        videoRef.current.srcObject = mediaStream;
+        videoRef.current.play().catch(() => {});
+      }
       return true;
     } catch (err) {
       console.error("Camera access denied or unavailable", err);
@@ -35,12 +41,26 @@ export function useCamera() {
     }
   }, [stream]);
 
-  // Bind stream to video element
+  // Callback ref to attach video element when rendered in DOM
+  const bindVideoRef = useCallback((node) => {
+    videoRef.current = node;
+    if (node && stream) {
+      if (node.srcObject !== stream) {
+        node.srcObject = stream;
+        node.play().catch(() => {});
+      }
+    }
+  }, [stream]);
+
+  // Ensure stream binding whenever stream or videoRef updates
   useEffect(() => {
     if (videoRef.current && stream) {
-      videoRef.current.srcObject = stream;
+      if (videoRef.current.srcObject !== stream) {
+        videoRef.current.srcObject = stream;
+        videoRef.current.play().catch(() => {});
+      }
     }
-  }, [stream, videoRef]);
+  }, [stream]);
 
   // Cleanup on unmount
   useEffect(() => {
@@ -51,5 +71,5 @@ export function useCamera() {
     };
   }, [stream]);
 
-  return { stream, permissionState, requestPermission, stopCamera, videoRef };
+  return { stream, permissionState, requestPermission, stopCamera, videoRef, bindVideoRef };
 }

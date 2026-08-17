@@ -17,6 +17,24 @@ export const GAME_CONFIGS = {
       { min: 300, max: Infinity, reward: REWARD_TIERS[4] } // survive > 30s
     ]
   },
+  'gesture-memory': {
+    tiers: [
+      { min: 0, max: 500, reward: REWARD_TIERS[0] },
+      { min: 501, max: 900, reward: REWARD_TIERS[1] },
+      { min: 901, max: 1300, reward: REWARD_TIERS[2] },
+      { min: 1301, max: 1700, reward: REWARD_TIERS[3] },
+      { min: 1701, max: Infinity, reward: REWARD_TIERS[4] }
+    ]
+  },
+  'pose-freeze': {
+    tiers: [
+      { min: 0, max: 500, reward: REWARD_TIERS[0] },
+      { min: 501, max: 900, reward: REWARD_TIERS[1] },
+      { min: 901, max: 1300, reward: REWARD_TIERS[2] },
+      { min: 1301, max: 1700, reward: REWARD_TIERS[3] },
+      { min: 1701, max: Infinity, reward: REWARD_TIERS[4] }
+    ]
+  },
 };
 
 export function calculateReward(score, gameId) {

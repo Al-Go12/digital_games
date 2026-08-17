@@ -1,84 +1,85 @@
-export const POSE_FREEZE_CONFIG = {
-  TOTAL_TIME: 20, 
-  HOLD_TIME: 5, 
-  TARGET_POSES: [
-    {
-      id: 'high-five',
-      name: 'High Five',
-      visual: '✋',
-      description: 'Open your palm and spread your fingers!',
-      check: (landmarks) => {
-        if (!landmarks || landmarks.length < 21) return 0;
-        const wrist = landmarks[0];
-        const tips = [8, 12, 16, 20];
-        
-        // All tips must be above wrist
-        let score = 0;
-        let allUp = true;
-        for (let tip of tips) {
-          if (landmarks[tip].y < wrist.y - 0.1) {
-            score += 25;
-          } else {
-            allUp = false;
-          }
-        }
-        return allUp ? 100 : score;
-      }
-    },
-    {
-      id: 'peace-sign',
-      name: 'Peace Sign',
-      visual: '✌️',
-      description: 'Show a peace sign (Index and Middle fingers up)!',
-      check: (landmarks) => {
-        if (!landmarks || landmarks.length < 21) return 0;
-        const indexTip = landmarks[8];
-        const indexPip = landmarks[6];
-        const middleTip = landmarks[12];
-        const middlePip = landmarks[10];
-        
-        const ringTip = landmarks[16];
-        const ringPip = landmarks[14];
-        const pinkyTip = landmarks[20];
-        const pinkyPip = landmarks[18];
+export const GESTURE_CATALOG = {
+  openPalm: {
+    id: 'openPalm',
+    name: 'Open Palm',
+    visual: '✋',
+    description: 'Five fingers extended'
+  },
+  thumbsUp: {
+    id: 'thumbsUp',
+    name: 'Thumbs Up',
+    visual: '👍',
+    description: 'Thumb extended upward'
+  },
+  point: {
+    id: 'point',
+    name: 'Pointing',
+    visual: '☝️',
+    description: 'Index finger extended upward'
+  },
+  pinch: {
+    id: 'pinch',
+    name: 'Pinch',
+    visual: '🤏',
+    description: 'Thumb and index tips close together'
+  }
+};
 
-        let score = 0;
-        // Index and Middle should be extended (tip higher than pip)
-        if (indexTip.y < indexPip.y) score += 25;
-        if (middleTip.y < middlePip.y) score += 25;
-        
-        // Ring and Pinky should be curled (tip lower than pip)
-        if (ringTip.y > ringPip.y) score += 25;
-        if (pinkyTip.y > pinkyPip.y) score += 25;
-        
-        return score;
-      }
+export const GESTURE_KEYS = Object.keys(GESTURE_CATALOG);
+
+/**
+ * Generate a sequence of given length from supported gestures without consecutive duplicates.
+ */
+export function generateRandomSequence(length) {
+  const sequence = [];
+  let lastKey = null;
+
+  for (let i = 0; i < length; i++) {
+    const available = GESTURE_KEYS.filter(k => k !== lastKey);
+    const chosen = available[Math.floor(Math.random() * available.length)];
+    sequence.push(chosen);
+    lastKey = chosen;
+  }
+
+  return sequence;
+}
+
+export const GESTURE_MEMORY_CONFIG = {
+  TITLE: "Gesture Memory Challenge",
+  SHORT_DESC: "Watch. Remember. Repeat.",
+  MAX_ATTEMPTS_PER_GESTURE: 2,
+  
+  ROUNDS: [
+    {
+      round: 1,
+      gesturesCount: 5,
+      memorizeTimeSeconds: 3,
+      presetSequence: ['openPalm', 'thumbsUp', 'point', 'pinch', 'openPalm']
     },
     {
-      id: 'thumbs-up',
-      name: 'Thumbs Up',
-      visual: '👍',
-      description: 'Give a thumbs up! (Other fingers curled)',
-      check: (landmarks) => {
-        if (!landmarks || landmarks.length < 21) return 0;
-        const thumbTip = landmarks[4];
-        const indexTip = landmarks[8];
-        const middleTip = landmarks[12];
-        const ringTip = landmarks[16];
-        const pinkyTip = landmarks[20];
-        
-        let score = 0;
-        // Thumb should be highest point
-        const highestOther = Math.min(indexTip.y, middleTip.y, ringTip.y, pinkyTip.y);
-        
-        if (thumbTip.y < highestOther) score += 50;
-        
-        // Other fingers should be curled (close together in y)
-        const range = Math.max(indexTip.y, middleTip.y, ringTip.y, pinkyTip.y) - highestOther;
-        if (range < 0.15) score += 50; // Tightly curled fingers share similar y
-        
-        return score;
-      }
+      round: 2,
+      gesturesCount: 5,
+      memorizeTimeSeconds: 3,
+      presetSequence: ['thumbsUp', 'openPalm', 'pinch', 'point', 'thumbsUp']
+    },
+    {
+      round: 3,
+      gesturesCount: 5,
+      memorizeTimeSeconds: 3,
+      presetSequence: ['point', 'thumbsUp', 'openPalm', 'pinch', 'point']
+    },
+    {
+      round: 4,
+      gesturesCount: 5,
+      memorizeTimeSeconds: 3,
+      presetSequence: ['pinch', 'point', 'openPalm', 'thumbsUp', 'pinch']
     }
-  ]
+  ],
+
+  SCORING: {
+    CORRECT_GESTURE: 100,
+    NO_RETRY_BONUS: 50,
+    SPEED_BONUS: 25, // Awarded if gesture submitted < 2.0s
+    ROUND_COMPLETION_BONUS: 200
+  }
 };

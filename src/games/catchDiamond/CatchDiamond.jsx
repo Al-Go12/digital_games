@@ -61,7 +61,7 @@ export function CatchDiamond() {
       {/* Video Background */}
       {(gameState === 'loading_model' || gameState === 'countdown' || gameState === 'playing') && !activeDemoMode && (
         <video 
-          ref={camera.videoRef}
+          ref={camera.bindVideoRef}
           autoPlay 
           playsInline 
           muted 

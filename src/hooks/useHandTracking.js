@@ -53,12 +53,12 @@ export function useHandTracking(videoRef, isEnabled = false) {
     };
   }, [isEnabled, demoMode]);
 
+  const smoothedDataRef = useRef({ x: 0.5, y: 0.5 });
+
   // Main prediction loop
   useEffect(() => {
     if (!isEnabled || demoMode) return;
 
-    const smoothedDataRef = useRef({ x: 0.5, y: 0.5 });
-    
     const predictWebcam = () => {
       const video = videoRef.current;
       if (video && video.readyState >= 2 && landmarkerRef.current) {
