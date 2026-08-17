@@ -110,9 +110,11 @@ export function useBalanceLogic(orientationData) {
       }
     });
 
-    // Update velocity & apply friction
+    // Update velocity & apply friction (extra braking when counter-steering against momentum)
     velocityRef.current += acceleration * dt;
-    velocityRef.current *= BALANCE_CONFIG.FRICTION;
+    const isCounterSteering = (velocityRef.current * acceleration) < 0;
+    const effectiveFriction = isCounterSteering ? 0.90 : BALANCE_CONFIG.FRICTION;
+    velocityRef.current *= effectiveFriction;
 
     // Update position
     positionRef.current += velocityRef.current * dt;

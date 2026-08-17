@@ -6,16 +6,16 @@ export const BALANCE_CONFIG = {
   BALL_RADIUS: 14,
   MAX_TILT_ANGLE: 40, // max degrees
   GRAVITY: 750, // pixels per second squared
-  FRICTION: 0.98, // dampening factor
+  FRICTION: 0.94, // dampening factor for responsive braking
   SCORE_PER_SECOND: 10,
 
   // Wind Mechanics
-  WIND_INTERVAL_MS: 6000, // Wind triggers every ~6 seconds
-  WIND_DURATION_MS: 2500, // Wind lasts for 2.5 seconds
-  WIND_FORCE: 350, // Force pushing the ball horizontally
+  WIND_INTERVAL_MS: 7000, // Wind triggers every ~7 seconds
+  WIND_DURATION_MS: 2000, // Wind lasts for 2 seconds
+  WIND_FORCE: 150, // Balanced force pushing the ball horizontally (survivable by counter-tilting)
 
   // Items & Hazards Spawns
   SPAWN_INTERVAL_MS: 3500, // Item spawns every 3.5 seconds
   GEM_SCORE_BONUS: 50, // Score added per gem collected
-  ANVIL_TORQUE_FORCE: 450, // Weight force pushing down one side
+  ANVIL_TORQUE_FORCE: 180, // Balanced weight force pushing down one side
 };
