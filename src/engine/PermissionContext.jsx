@@ -1,4 +1,5 @@
 import { createContext, useContext, useState, useEffect } from 'react';
+import { useLocation } from 'react-router-dom';
 import { useCamera } from '../hooks/useCamera';
 import { useDeviceOrientation } from '../hooks/useDeviceOrientation';
 
@@ -6,7 +7,8 @@ const PermissionContext = createContext(null);
 
 export function PermissionProvider({ children }) {
   const [hasCompletedOnboarding, setHasCompletedOnboarding] = useState(false);
-  const [globalDemoMode, setGlobalDemoMode] = useState(false); // If user opts for demo mode universally
+  const [globalDemoMode, setGlobalDemoMode] = useState(false);
+  const location = useLocation();
 
   const camera = useCamera();
   const orientation = useDeviceOrientation();
@@ -15,6 +17,18 @@ export function PermissionProvider({ children }) {
     setGlobalDemoMode(isDemo);
     setHasCompletedOnboarding(true);
   };
+
+  // Turn off camera stream when not playing a camera game to save battery
+  useEffect(() => {
+    const isCameraGame = location.pathname === '/game/catch-diamond' || location.pathname === '/game/pose-freeze';
+    
+    if (!isCameraGame) {
+      camera.stopCamera();
+    } else if (hasCompletedOnboarding && !globalDemoMode && !camera.stream) {
+      // Re-request stream if returning to a camera game
+      camera.requestPermission();
+    }
+  }, [location.pathname, hasCompletedOnboarding, globalDemoMode, camera]);
 
   return (
     <PermissionContext.Provider 

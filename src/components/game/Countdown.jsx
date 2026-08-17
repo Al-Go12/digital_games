@@ -12,7 +12,8 @@ export function Countdown({ onComplete }) {
       const timer = setTimeout(() => onComplete(), 1000);
       return () => clearTimeout(timer);
     }
-  }, [count, onComplete]);
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [count]);
 
   return (
     <div className="absolute inset-0 z-40 flex items-center justify-center bg-black/40 backdrop-blur-sm">
