@@ -55,6 +55,9 @@ export function usePoseTracking(videoRef, isEnabled = false) {
   useEffect(() => {
     if (!isEnabled || demoMode) return;
 
+    const smoothedPoseRef = useRef(new Array(33).fill({ x: 0, y: 0, z: 0, visibility: 0 }));
+    let isFirstFrame = true;
+
     const predictWebcam = () => {
       const video = videoRef.current;
       if (video && video.readyState >= 2 && landmarkerRef.current) {
@@ -64,7 +67,27 @@ export function usePoseTracking(videoRef, isEnabled = false) {
           const results = landmarkerRef.current.detectForVideo(video, startTimeMs);
           
           if (results.landmarks && results.landmarks.length > 0) {
-            setPoseData(results.landmarks[0]);
+            const rawLandmarks = results.landmarks[0];
+            
+            if (isFirstFrame) {
+              // Initialize smoothing array directly with first frame
+              smoothedPoseRef.current = rawLandmarks.map(lm => ({...lm}));
+              isFirstFrame = false;
+            } else {
+              // Apply EMA smoothing to every landmark
+              const SMOOTHING_FACTOR = 0.3; // Very heavy smoothing for body pose stability
+              smoothedPoseRef.current = rawLandmarks.map((lm, idx) => {
+                const prev = smoothedPoseRef.current[idx];
+                return {
+                  x: prev.x + (lm.x - prev.x) * SMOOTHING_FACTOR,
+                  y: prev.y + (lm.y - prev.y) * SMOOTHING_FACTOR,
+                  z: prev.z + (lm.z - prev.z) * SMOOTHING_FACTOR,
+                  visibility: lm.visibility // don't smooth visibility
+                };
+              });
+            }
+            
+            setPoseData([...smoothedPoseRef.current]);
           }
         }
       }

@@ -1,11 +1,11 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { GameHeader } from '../../components/game/GameHeader';
 import { Countdown } from '../../components/game/Countdown';
 import { ResultScreen } from '../../components/game/ResultScreen';
-import { PermissionModal } from '../../components/game/PermissionModal';
 import { ConfettiEffect } from '../../components/ui/ConfettiEffect';
-import { useCamera } from '../../hooks/useCamera';
+import { usePermissions } from '../../engine/PermissionContext';
 import { useHandTracking } from '../../hooks/useHandTracking';
 import { useGameTimer } from '../../hooks/useGameTimer';
 import { useGameLoop } from '../../hooks/useGameLoop';
@@ -13,17 +13,22 @@ import { useCatchDiamondLogic } from './catchDiamondLogic';
 import { CATCH_DIAMOND_CONFIG } from './config';
 import { calculateReward } from '../../engine/rewards';
 
-export function CatchDiamond({ onExit }) {
+export function CatchDiamond() {
+  const navigate = useNavigate();
+  const { camera, globalDemoMode } = usePermissions();
   const [gameState, setGameState] = useState('setup');
   
-  const { permissionState, requestPermission, videoRef, stopCamera } = useCamera();
-  const { isLoaded, handData, demoMode, enableDemoMode } = useHandTracking(videoRef, gameState !== 'setup' && gameState !== 'result');
+  const { isLoaded, handData, demoMode } = useHandTracking(
+    camera.videoRef, 
+    gameState !== 'setup' && gameState !== 'result' && !globalDemoMode
+  );
+  
+  const activeDemoMode = globalDemoMode || demoMode;
   
   const { cursorX, cursorY, objects, score, updatePhysics, resetGame, floatingScores, GAME_WIDTH, GAME_HEIGHT } = useCatchDiamondLogic(handData);
   
   const { timeLeft, resetTimer } = useGameTimer(CATCH_DIAMOND_CONFIG.GAME_DURATION, gameState === 'playing', () => {
     setGameState('result');
-    stopCamera();
   });
 
   useGameLoop((deltaTime) => {
@@ -32,15 +37,6 @@ export function CatchDiamond({ onExit }) {
   }, gameState === 'playing');
 
   const handleStart = () => {
-    if (permissionState === 'prompt') {
-      setGameState('permission');
-    } else {
-      setGameState('loading_model');
-    }
-  };
-
-  const handlePermissionGrant = async () => {
-    await requestPermission();
     setGameState('loading_model');
   };
 
@@ -49,9 +45,10 @@ export function CatchDiamond({ onExit }) {
     resetTimer();
     setGameState('loading_model');
   };
+  
+  const handleExit = () => navigate('/');
 
-  // Wait for MediaPipe model to load before counting down
-  if (gameState === 'loading_model' && (isLoaded || demoMode)) {
+  if (gameState === 'loading_model' && (isLoaded || activeDemoMode)) {
     setGameState('countdown');
   }
 
@@ -59,12 +56,12 @@ export function CatchDiamond({ onExit }) {
 
   return (
     <div className="relative flex-1 flex flex-col h-full bg-gray-900 overflow-hidden">
-      <GameHeader title="Catch the Diamond" onExit={() => { stopCamera(); onExit(); }} />
+      <GameHeader title="Catch the Diamond" onExit={handleExit} />
       
       {/* Video Background */}
-      {(gameState === 'loading_model' || gameState === 'countdown' || gameState === 'playing') && !demoMode && (
+      {(gameState === 'loading_model' || gameState === 'countdown' || gameState === 'playing') && !activeDemoMode && (
         <video 
-          ref={videoRef}
+          ref={camera.videoRef}
           autoPlay 
           playsInline 
           muted 
@@ -83,10 +80,10 @@ export function CatchDiamond({ onExit }) {
         </div>
       </div>
       
-      {demoMode && (
+      {activeDemoMode && (
         <div className="absolute top-32 left-0 right-0 flex justify-center z-20 pointer-events-none">
           <div className="bg-red-500/80 backdrop-blur text-white px-3 py-1 rounded-full text-xs font-bold uppercase tracking-wide">
-            Demo Mode Active
+            Demo Mode Active (Mouse/Touch)
           </div>
         </div>
       )}
@@ -106,22 +103,8 @@ export function CatchDiamond({ onExit }) {
         </div>
       )}
 
-      {/* PERMISSION */}
-      {gameState === 'permission' && (
-        <PermissionModal 
-          title="Camera Access"
-          description="This game requires camera access to track your hand movements. All processing is done locally on your device."
-          isDenied={permissionState === 'denied'}
-          onGrant={handlePermissionGrant}
-          onDeny={() => {
-            enableDemoMode();
-            setGameState('loading_model');
-          }}
-        />
-      )}
-
       {/* LOADING MODEL */}
-      {gameState === 'loading_model' && !isLoaded && !demoMode && (
+      {gameState === 'loading_model' && !isLoaded && !activeDemoMode && (
         <div className="absolute inset-0 z-30 flex flex-col items-center justify-center bg-black/80 text-white p-6 text-center">
           <div className="animate-spin w-8 h-8 border-4 border-purple-500 border-t-transparent rounded-full mb-4"></div>
           <p className="text-lg font-medium">Loading Vision Models...</p>
@@ -136,7 +119,7 @@ export function CatchDiamond({ onExit }) {
       {/* GAMEPLAY AREA */}
       <div className="flex-1 relative z-10" style={{ maxWidth: GAME_WIDTH, margin: '0 auto', width: '100%' }}>
         {/* Hand Cursor */}
-        {handData && (
+        {(handData || activeDemoMode) && (
           <motion.div
             className="absolute rounded-full border-2 border-purple-400 bg-purple-500/30 flex items-center justify-center pointer-events-none shadow-[0_0_15px_rgba(168,85,247,0.5)] z-20"
             style={{ 
@@ -193,7 +176,7 @@ export function CatchDiamond({ onExit }) {
             score={score} 
             reward={reward} 
             onReplay={handleReplay} 
-            onExit={onExit} 
+            onExit={handleExit} 
           />
         </>
       )}

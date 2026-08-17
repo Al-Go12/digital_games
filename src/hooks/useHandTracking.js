@@ -57,6 +57,8 @@ export function useHandTracking(videoRef, isEnabled = false) {
   useEffect(() => {
     if (!isEnabled || demoMode) return;
 
+    const smoothedDataRef = useRef({ x: 0.5, y: 0.5 });
+    
     const predictWebcam = () => {
       const video = videoRef.current;
       if (video && video.readyState >= 2 && landmarkerRef.current) {
@@ -70,14 +72,20 @@ export function useHandTracking(videoRef, isEnabled = false) {
             // Use landmark 9 (middle finger MCP) as a stable cursor point
             const targetPoint = hand[9];
             
-            // Note: Camera is usually mirrored, so we mirror the X coordinate
+            // Raw values (mirror X)
+            const rawX = 1 - targetPoint.x;
+            const rawY = targetPoint.y;
+            
+            // Exponential Moving Average (EMA) for smooth "perfect" tracking
+            const SMOOTHING_FACTOR = 0.4; // Lower = smoother but more delay
+            smoothedDataRef.current.x = smoothedDataRef.current.x + (rawX - smoothedDataRef.current.x) * SMOOTHING_FACTOR;
+            smoothedDataRef.current.y = smoothedDataRef.current.y + (rawY - smoothedDataRef.current.y) * SMOOTHING_FACTOR;
+            
             setHandData({
-              x: 1 - targetPoint.x, 
-              y: targetPoint.y,
+              x: smoothedDataRef.current.x, 
+              y: smoothedDataRef.current.y,
               landmarks: hand
             });
-          } else {
-            // Keep previous position or set to null? Better to just keep previous slightly to avoid flickering
           }
         }
       }

@@ -1,53 +1,52 @@
 import { useState, useCallback, useRef } from 'react';
-import { POSE_FREEZE_CONFIG } from './config';
 
-export function usePoseTrackingLogic(poseData) {
+export function usePoseTrackingLogic(handData) {
   const [matchScore, setMatchScore] = useState(0);
   const [stabilityScore, setStabilityScore] = useState(100);
   
   const previousPoseRef = useRef(null);
 
   const calculateMatch = useCallback((targetPose) => {
-    if (!poseData) return 0;
+    if (!handData || !handData.landmarks) return 0;
     
     // Evaluate based on config function
-    const match = targetPose.check(poseData);
+    const match = targetPose.check(handData.landmarks);
     setMatchScore(Math.round(match));
     return match;
-  }, [poseData]);
+  }, [handData]);
 
   const calculateStability = useCallback(() => {
-    if (!poseData) return 100;
+    if (!handData || !handData.landmarks) return 100;
     
     let stability = stabilityScore;
     
     if (previousPoseRef.current) {
-      // Calculate jitter/movement across key landmarks
+      // Calculate jitter/movement across key hand landmarks (wrist, tips)
       let totalMovement = 0;
-      const keyLandmarks = [11, 12, 13, 14, 15, 16]; // Shoulders, elbows, wrists
+      const keyLandmarks = [0, 4, 8, 12, 16, 20]; 
       
       keyLandmarks.forEach(idx => {
-        if (poseData[idx] && previousPoseRef.current[idx]) {
-          const dx = poseData[idx].x - previousPoseRef.current[idx].x;
-          const dy = poseData[idx].y - previousPoseRef.current[idx].y;
+        if (handData.landmarks[idx] && previousPoseRef.current[idx]) {
+          const dx = handData.landmarks[idx].x - previousPoseRef.current[idx].x;
+          const dy = handData.landmarks[idx].y - previousPoseRef.current[idx].y;
           totalMovement += Math.sqrt(dx*dx + dy*dy);
         }
       });
 
       // If movement is high, drop stability
-      if (totalMovement > 0.1) {
-        stability -= (totalMovement * 50);
+      if (totalMovement > 0.05) {
+        stability -= (totalMovement * 200);
       } else {
-        stability += 1; // recover slightly if still
+        stability += 2; // recover quickly if still
       }
     }
     
-    previousPoseRef.current = poseData;
+    previousPoseRef.current = handData.landmarks;
     
     const finalStability = Math.max(0, Math.min(100, Math.round(stability)));
     setStabilityScore(finalStability);
     return finalStability;
-  }, [poseData, stabilityScore]);
+  }, [handData, stabilityScore]);
 
   const resetTracking = useCallback(() => {
     setMatchScore(0);

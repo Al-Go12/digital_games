@@ -1,47 +1,83 @@
 export const POSE_FREEZE_CONFIG = {
-  PREPARATION_TIME: 10, // seconds to get into pose
-  FREEZE_TIME: 5, // seconds to hold the pose
+  TOTAL_TIME: 20, 
+  HOLD_TIME: 5, 
   TARGET_POSES: [
     {
-      id: 'hands-up',
-      name: 'Hands Up',
-      visual: '\\ O /',
-      description: 'Raise both arms high!',
-      // Approximate target relative y-coordinates for wrists (landmarks 15, 16) relative to shoulders (11, 12)
+      id: 'high-five',
+      name: 'High Five',
+      visual: '✋',
+      description: 'Open your palm and spread your fingers!',
       check: (landmarks) => {
-        if (!landmarks || landmarks.length < 17) return 0;
-        const lShoulder = landmarks[11];
-        const rShoulder = landmarks[12];
-        const lWrist = landmarks[15];
-        const rWrist = landmarks[16];
+        if (!landmarks || landmarks.length < 21) return 0;
+        const wrist = landmarks[0];
+        const tips = [8, 12, 16, 20];
         
-        // Wrist should be higher (smaller Y) than shoulder
+        // All tips must be above wrist
         let score = 0;
-        if (lWrist.y < lShoulder.y) score += 50;
-        if (rWrist.y < rShoulder.y) score += 50;
+        let allUp = true;
+        for (let tip of tips) {
+          if (landmarks[tip].y < wrist.y - 0.1) {
+            score += 25;
+          } else {
+            allUp = false;
+          }
+        }
+        return allUp ? 100 : score;
+      }
+    },
+    {
+      id: 'peace-sign',
+      name: 'Peace Sign',
+      visual: '✌️',
+      description: 'Show a peace sign (Index and Middle fingers up)!',
+      check: (landmarks) => {
+        if (!landmarks || landmarks.length < 21) return 0;
+        const indexTip = landmarks[8];
+        const indexPip = landmarks[6];
+        const middleTip = landmarks[12];
+        const middlePip = landmarks[10];
+        
+        const ringTip = landmarks[16];
+        const ringPip = landmarks[14];
+        const pinkyTip = landmarks[20];
+        const pinkyPip = landmarks[18];
+
+        let score = 0;
+        // Index and Middle should be extended (tip higher than pip)
+        if (indexTip.y < indexPip.y) score += 25;
+        if (middleTip.y < middlePip.y) score += 25;
+        
+        // Ring and Pinky should be curled (tip lower than pip)
+        if (ringTip.y > ringPip.y) score += 25;
+        if (pinkyTip.y > pinkyPip.y) score += 25;
         
         return score;
       }
     },
     {
-      id: 'T-pose',
-      name: 'T-Pose',
-      visual: '- O -',
-      description: 'Arms out to the sides!',
+      id: 'thumbs-up',
+      name: 'Thumbs Up',
+      visual: '👍',
+      description: 'Give a thumbs up! (Other fingers curled)',
       check: (landmarks) => {
-        if (!landmarks || landmarks.length < 17) return 0;
-        const lShoulder = landmarks[11];
-        const rShoulder = landmarks[12];
-        const lWrist = landmarks[15];
-        const rWrist = landmarks[16];
+        if (!landmarks || landmarks.length < 21) return 0;
+        const thumbTip = landmarks[4];
+        const indexTip = landmarks[8];
+        const middleTip = landmarks[12];
+        const ringTip = landmarks[16];
+        const pinkyTip = landmarks[20];
         
-        // Wrists should be approximately at shoulder Y level
-        let score = 100;
-        const leftDiff = Math.abs(lWrist.y - lShoulder.y);
-        const rightDiff = Math.abs(rWrist.y - rShoulder.y);
+        let score = 0;
+        // Thumb should be highest point
+        const highestOther = Math.min(indexTip.y, middleTip.y, ringTip.y, pinkyTip.y);
         
-        score -= (leftDiff + rightDiff) * 100; // Penalize deviation
-        return Math.max(0, Math.min(100, score));
+        if (thumbTip.y < highestOther) score += 50;
+        
+        // Other fingers should be curled (close together in y)
+        const range = Math.max(indexTip.y, middleTip.y, ringTip.y, pinkyTip.y) - highestOther;
+        if (range < 0.15) score += 50; // Tightly curled fingers share similar y
+        
+        return score;
       }
     }
   ]

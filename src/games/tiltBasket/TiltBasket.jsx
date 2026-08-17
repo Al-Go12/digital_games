@@ -1,22 +1,23 @@
 import { useState } from 'react';
 import { motion, AnimatePresence } from 'framer-motion';
+import { useNavigate } from 'react-router-dom';
 import { GameHeader } from '../../components/game/GameHeader';
 import { Countdown } from '../../components/game/Countdown';
 import { ResultScreen } from '../../components/game/ResultScreen';
-import { PermissionModal } from '../../components/game/PermissionModal';
 import { ConfettiEffect } from '../../components/ui/ConfettiEffect';
-import { useDeviceOrientation } from '../../hooks/useDeviceOrientation';
+import { usePermissions } from '../../engine/PermissionContext';
 import { useGameTimer } from '../../hooks/useGameTimer';
 import { useGameLoop } from '../../hooks/useGameLoop';
 import { useTiltBasketLogic } from './tiltBasketLogic';
 import { TILT_BASKET_CONFIG } from './config';
 import { calculateReward } from '../../engine/rewards';
 
-export function TiltBasket({ onExit }) {
-  const [gameState, setGameState] = useState('setup'); // setup, permission, countdown, playing, result
+export function TiltBasket() {
+  const navigate = useNavigate();
+  const { orientation, globalDemoMode } = usePermissions();
+  const [gameState, setGameState] = useState('setup'); // setup, countdown, playing, result
   
-  const { orientation, permissionState, requestPermission, isSupported } = useDeviceOrientation();
-  const { basketX, basketY, objects, score, updatePhysics, resetGame, floatingScores, GAME_WIDTH, GAME_HEIGHT } = useTiltBasketLogic(orientation);
+  const { basketX, basketY, objects, score, updatePhysics, resetGame, floatingScores, GAME_WIDTH, GAME_HEIGHT } = useTiltBasketLogic(orientation.orientation);
   
   const { timeLeft, resetTimer } = useGameTimer(TILT_BASKET_CONFIG.GAME_DURATION, gameState === 'playing', () => {
     setGameState('result');
@@ -27,18 +28,7 @@ export function TiltBasket({ onExit }) {
     updatePhysics(deltaTime, timeElapsed);
   }, gameState === 'playing');
 
-  const handleStart = () => {
-    if (permissionState === 'prompt') {
-      setGameState('permission');
-    } else {
-      setGameState('countdown');
-    }
-  };
-
-  const handlePermissionGrant = async () => {
-    await requestPermission();
-    setGameState('countdown');
-  };
+  const handleStart = () => setGameState('countdown');
 
   const handleReplay = () => {
     resetGame();
@@ -46,11 +36,13 @@ export function TiltBasket({ onExit }) {
     setGameState('countdown');
   };
 
+  const handleExit = () => navigate('/');
+
   const reward = gameState === 'result' ? calculateReward(score, 'tilt-basket') : null;
 
   return (
     <div className="relative flex-1 flex flex-col h-full bg-blue-50 overflow-hidden">
-      <GameHeader title="Tilt Basket" onExit={onExit} />
+      <GameHeader title="Tilt Basket" onExit={handleExit} />
       
       {/* HUD */}
       <div className="absolute top-20 left-4 right-4 flex justify-between z-10">
@@ -61,6 +53,14 @@ export function TiltBasket({ onExit }) {
           {score}
         </div>
       </div>
+
+      {globalDemoMode && (
+        <div className="absolute top-32 left-0 right-0 flex justify-center z-10 pointer-events-none">
+          <div className="bg-blue-500/80 backdrop-blur text-white px-3 py-1 rounded-full text-xs font-bold tracking-wide">
+            Use Left/Right Arrows
+          </div>
+        </div>
+      )}
 
       {/* SETUP */}
       {gameState === 'setup' && (
@@ -75,17 +75,6 @@ export function TiltBasket({ onExit }) {
             Start Game
           </button>
         </div>
-      )}
-
-      {/* PERMISSION */}
-      {gameState === 'permission' && (
-        <PermissionModal 
-          title="Motion Access"
-          description="We need access to your device's motion sensors to control the basket by tilting."
-          isDenied={permissionState === 'denied' || !isSupported}
-          onGrant={handlePermissionGrant}
-          onDeny={() => setGameState('countdown')}
-        />
       )}
 
       {/* COUNTDOWN */}
@@ -151,7 +140,7 @@ export function TiltBasket({ onExit }) {
             score={score} 
             reward={reward} 
             onReplay={handleReplay} 
-            onExit={onExit} 
+            onExit={handleExit} 
           />
         </>
       )}
